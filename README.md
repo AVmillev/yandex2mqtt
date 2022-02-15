@@ -174,6 +174,7 @@ devices: [
                 instance: 'on',
                 set: '/yandex/controls/light_HaW_002/on',
                 state: '/yandex/controls/light_HaW_002/on/state',
+                sensor: false,
             },
         ],
         capabilities: [
@@ -195,6 +196,7 @@ devices: [
                 instance: 'on',
                 set: '/yandex/controls/light_LvR_003/on',
                 state: '/yandex/controls/light_LvR_003/on/state',
+                sensor: false,
             },
         ],
         valueMapping: [
@@ -221,10 +223,12 @@ devices: [
             {
                 instance: 'temperature',
                 state: '/yandex/sensors/LvR_001_Weather/temperature',
+                sensor: true,
             },
             {
                 instance: 'humidity',
                 state: '/yandex/sensors/LvR_001_Weather/humidity',
+                sensor: true,
             },
         ],
         properties: [
@@ -258,10 +262,12 @@ devices: [
                 instance: 'on',
                 set: '/yandex/controls/socket_LvR_002/on',
                 state: '/yandex/controls/socket_LvR_002/on/state',
+                sensor: false,
             },
             {
                 instance: 'power',
                 state: '/yandex/controls/socket_LvR_002/power',
+                sensor: true,
             },
         ],
         capabilities: [

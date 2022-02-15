@@ -114,11 +114,11 @@ if (config.devices) {
 const subscriptions = [];
 global.devices.forEach(device => {
     device.data.custom_data.mqtt.forEach(mqtt => {
-        const {instance, state: topic} = mqtt;
+        const {instance, state: topic, sensor} = mqtt;
         if (instance != undefined && topic != undefined) {
-            subscriptions.push({deviceId: device.data.id, instance, topic});
+            subscriptions.push({deviceId: device.data.id, instance, topic, sensor});
         }
-    });
+    });    
 });
 
 /* Create MQTT client (variable) in global */
@@ -127,16 +127,18 @@ global.mqttClient = mqtt.connect(`mqtt://${config.mqtt.host}`, {
     username: config.mqtt.user,
     password: config.mqtt.password
 }).on('connect', () => { /* on connect event handler */
-    mqttClient.subscribe(subscriptions.map(pair => pair.topic));
+    mqttClient.subscribe(subscriptions.map(pair => pair.topic));   
 }).on('offline', () => { /* on offline event handler */
     /* */
 }).on('message', (topic, message) => { /* on get message event handler */
+    //console.log('Received Message',topic, message.toString());
     const subscription = subscriptions.find(sub => topic.toLowerCase() === sub.topic.toLowerCase());
+    //console.log('subscription', subscription)
     if (subscription == undefined) return;
 
-    const {deviceId, instance} = subscription;
+    const {deviceId, instance, sensor} = subscription;
     const ldevice = global.devices.find(d => d.data.id == deviceId);
-    ldevice.updateState(`${message}`, instance);
+    ldevice.updateState(`${message}`, instance, sensor);
 
     /* Make Request to Yandex Dialog notification API */
     Promise.all(config.notification.map(el => {
@@ -154,7 +156,9 @@ global.mqttClient = mqtt.connect(`mqtt://${config.mqtt.host}`, {
                 }
             }, res => {
                 res.on('data', d => {
-                    global.logger.log('info', {message: `${d}`});
+		    //process.stdout.write(d); 
+		    //console.log('message data ', `${d}`);
+                    //global.logger.log('error', {message: `${d}`});
                 });
             });
                 
@@ -162,19 +166,21 @@ global.mqttClient = mqtt.connect(`mqtt://${config.mqtt.host}`, {
                 global.logger.log('error', {message: `${error}`});
             });
             
-            let {id, capabilities, properties} = ldevice.getState();
-            req.write(JSON.stringify({
+    	    const {id, capabilities, properties} = ldevice.getState();
+            const resp = {
                 "ts": Math.floor(Date.now() / 1000),
                 "payload": {
                     "user_id": `${user_id}`,
                     "devices": [{
                         id,
-                        capabilities: capabilities.filter(c => c.state.instance == instance),
-                        properties: properties.filter(p => p.state.instance == instance)
+                        capabilities: capabilities.filter(c => c.state.instance === instance),
+                        properties: properties.filter(p => p.state.instance === instance)
                     }],
                 }
-            }));
-
+            };
+	    console.log('resp',JSON.stringify( resp));
+	    req.write(JSON.stringify(resp));
+	    //process.stdout.write(resp);	
             req.end();
 
             resolve(true);

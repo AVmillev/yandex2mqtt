@@ -34,6 +34,7 @@ module.exports.devices = [
             };
 
             for (const d of global.devices.filter(d => Array.isArray(d.meta.allowedUsers) && d.meta.allowedUsers.indexOf(userId) > -1)) {
+                //console.log('Info device:', JSON.stringify(d.getInfo()));
                 r.payload.devices.push(d.getInfo());
             };
             
@@ -58,6 +59,7 @@ module.exports.query = [
 
         for (const d of req.body.devices) {
             const ldevice = global.devices.find(device => device.data.id == d.id);
+            console.log('ldevice', ldevice)
             r.payload.devices.push(ldevice.getState());
         };
 
@@ -88,7 +90,6 @@ module.exports.action = [
             
             r.payload.devices.push({id, capabilities});
         };
-
         res.status(200).send(r);
     }
 ];

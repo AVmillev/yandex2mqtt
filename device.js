@@ -19,7 +19,7 @@ function convertToYandexValue(val, actType) {
             if (val == undefined) return false;
             if (['true', 'on', '1'].indexOf(String(val).toLowerCase()) != -1) return true;
             else return false;
-        }
+        }        
         default:
             return val;
     }
@@ -37,7 +37,7 @@ class Device {
             type: options.type || 'devices.types.light',
             custom_data: {
                 mqtt: options.mqtt || [],
-                valueMapping: options.valueMapping || [],
+                valueMapping: options.valueMapping || [],                
             },
             capabilities: (options.capabilities || []).map(c => Object.assign({}, c, {state: (c.state == undefined) ? this.initState(c) : c.state})),
             properties: (options.properties || []).map(p => Object.assign({}, p, {state: (p.state == undefined) ? this.initState(p) : p.state})),
@@ -57,6 +57,13 @@ class Device {
                 return {
                     instance: parameters.instance,
                     value: 0
+                }
+            }
+            case 'event': {
+                //console.log('initstate:',  parameters.events[0].value)
+                return {
+                    instance: parameters.instance,
+                    value: parameters.events[0].value
                 }
             }
             case 'on_off': {
@@ -113,7 +120,7 @@ class Device {
 
     /* Find 'set' topic by instance*/
     findTopicByInstance(instance) {
-        return this.data.custom_data.mqtt.find(i => i.instance === instance).set;
+        return this.data.custom_data.mqtt.find(i => i.instance === instance && i.set != '').set;
     }
     
     /* Get mapped value (if exist) for capability type */
@@ -154,7 +161,7 @@ class Device {
                 })
             })() || [],
             properties: (() => {
-                return properties.filter(p => p.retrievable === true).map(p => {
+                return properties.filter(p => p.retrievable == true).map(p => {
                     return {
                         type: p.type,
                         state: p.state
@@ -168,6 +175,7 @@ class Device {
 
     /* Change device capability state and publish value to MQTT topic */
     setCapabilityState(val, type, instance) {
+        //console.log(val, type, instance);
         const {id} = this.data;
         const actType = String(type).split('.')[2];
         const value = this.getMappedValue(val, actType, true);
@@ -183,7 +191,7 @@ class Device {
             message = `${value}`;
         } catch(e) {              
             topic = false;
-            logger.log('error', {message: `${e}`});
+            console.log('error message:' ,`${e}`);
         }
 
         if (topic) {
@@ -202,18 +210,17 @@ class Device {
     }
 
     /* Update device capability or property state */
-    updateState(val, instance) {
+    updateState(val, instance, sensor) {
         const {id, capabilities, properties} = this.data;
 
         try {
-            const cp = [].concat(capabilities, properties).find(cp => (cp.state.instance === instance));
-            if (cp == undefined) throw new Error(`Can't instance '${instance}' in device '${id}'`);
-
+            const cp = !sensor ? capabilities.find(cp => (cp.state.instance === instance )): properties.find(cp => (cp.state.instance === instance ));
+            if (cp == undefined) throw new Error(`Can't instance '${instance}' in device '${id}'`);            
             const actType = String(cp.type).split('.')[2];
             const value = this.getMappedValue(val, actType, false);
             cp.state = {instance, value: convertToYandexValue(value, actType)};
         } catch(e) {
-            logger.log('error', {message: `${e}`});
+            console.log('error updateState:', `${e}`);
         }
     }
 }
